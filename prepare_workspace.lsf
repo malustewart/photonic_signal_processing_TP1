@@ -1,0 +1,12 @@
+switchtolayout; # pasa al modo layout
+deleteall;      # elimina todos los objetos
+
+materials;  # crea todos los materiales nuevos
+            # tiene que estar en la misma carpeta
+            # se puede agregar  el directorio con la funcion addpath
+
+clear;      # elimina las variables
+
+# units
+um = 1e-6;
+nm = 1e-9;
