@@ -1,0 +1,84 @@
+# save_object_properties_to_json
+#
+# Guarda las propiedades de un objeto a un archivo .json
+#
+# object: string con el nombre del objeto del que se quiere guardar las propiedades.
+#   Ejemplo: "waveguide", "FDE::data" (ver sintaxis de la función select de Lumerical)
+#
+# filename: nombre del archivo donde guardar las propiedades del objeto object.
+#   Ejemplo: "waveguide_props.json"
+function save_object_properties_to_json(filename, object) {
+    properties = getnamed(object, splitstring(getnamed(object), "\n"));
+    jsonsave(filename, properties);
+}
+
+
+# get_properties_from_json
+#
+# Devuelve todas las propiedades guardada en un archivo .json
+# Formato: struct donde:
+#   - nombre de propiedad = nombre de campo
+#   - valor de propiedad  = valor de campo
+#
+# filename: nombre del archivo de donde leer las propiedades
+function get_object_properties_from_json(filename) { 
+    properties = jsonread(filename);
+    return properties.properties;
+}
+
+
+
+# get_property_from_json
+#
+# Devuelve una propiedad guardada en un archivo .json
+#
+# filename: nombre del archivo de donde leer la propiedad
+#
+# property: nombre de la propiedad 
+function get_object_property_from_json(filename, property) { 
+    all_properties = get_object_properties_from_json(filename);
+    return getfield(all_properties, property);
+}
+
+# set_object_property_from_json
+#
+# Setea una propiedad de un objeto guardada en un archivo .json
+#
+# object: string con el nombre del objeto al que se le quieren configurar la propiedad.
+#   Ejemplo: "waveguide", "FDE::data" (ver sintaxis de la función select de Lumerical)
+#
+# filename: nombre del archivo de donde leer la propiedad
+#
+# property: nombre de la propiedad a setear
+function set_object_properties_from_json(filename, object, property) { 
+    property_value = get_object_property_from_json(filename, property);
+    setnamed(object, property, property_value);     
+}
+
+# ================================================================================================= #
+
+# Funcion SET de todas las propiedades a la vez: no funciona porque hay propiedades que
+# se guardan automaticamente que no se pueden setear porque están "inactive".
+# Creo que tiene que ver con el orden en que se setean las propiedades (alfabetico)
+# Ejemplo de error al querer setear la propiedad index de una guia de onda (nota, sin haber seteado material):
+# Error: save_and_recall_object.lsf line 31: in setnamed, the requested property is inactive
+#
+#
+#
+# set_object_properties (NO FUNCIONA)
+#
+# Setea las propiedades de un objeto desde un archivo .json
+#
+# object: string con el nombre del objeto al que se le quieren configurar las propiedades.
+#   Ejemplo: "waveguide", "FDE::data" (ver sintaxis de la función select de Lumerical)
+#
+# filename: nombre del archivo de donde leer las propiedades
+#function set_object_properties(filename, object) { 
+    #properties = jsonread(filename);
+    #properties_names = splitstring(get, "\n");
+    #for (i = 1:length(properties_names)) {
+        #prop_name = properties_names{i};
+        #print(prop_name);
+        #setnamed(object, prop_name, getfield(properties.properties, prop_name));     
+    #}
+#}
