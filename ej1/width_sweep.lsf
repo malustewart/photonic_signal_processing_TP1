@@ -17,7 +17,7 @@ material_sweep = {
 # Width sweep params
 wg_width_min = 0.1*um;    # ancho de la guia minimo
 wg_width_max = 2.0*um;    # ancho de la guia maximo
-wg_width_steps = 5;      # cant. de anchos de guia a simular
+wg_width_steps = 96;      # cant. de anchos de guia a simular
 
 wg_width_sweep = linspace(wg_width_min,wg_width_max,wg_width_steps);
 
