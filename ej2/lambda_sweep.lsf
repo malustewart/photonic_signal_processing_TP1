@@ -150,14 +150,15 @@ for (i=1:length(material_sweep)){
         holdon;
         leg{j}="mode " + num2str(j);    
     }
-    ?n_wg = getindex(material_sweep{i}.material,c/wl_sweep(1)*1.1;
-    ?n_box = getindex(box_params.material,freq);
+    freq_aprox = c/wl_sweep(1);
+    ?n_wg = getindex(material_sweep{i}.material, freq_aprox);
+    ?n_box = getindex(box_params.material,freq_aprox);
     
     setplot("title", material_sweep{i}.material);
     setplot("x label", "wavelength (nm)");
     setplot("y label", "neff");
-    setplot("y min", n_box); 
-    setplot("y max", n_wg);
+    setplot("y min", n_box * 0.9); 
+    setplot("y max", n_wg * 1.1);
     legend(leg);
     holdoff;
 }
