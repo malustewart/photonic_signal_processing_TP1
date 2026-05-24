@@ -1,0 +1,183 @@
+prepare_workspace;
+
+# Material sweep:
+
+material_sweep = {
+    {
+        "material": "Si (Silicon) - Dispersive & Lossless", 
+        "wg_H": 220*nm,
+        "wg_W": 0.3*um
+    },
+    {
+        "material": "Si3N4 (Silicon Nitride) - Dispersive & Lossless", 
+        "wg_H": 400*nm,
+        "wg_W": 0.75*um
+    }
+};
+
+
+# lambda sweep params
+lambda_min = 1.5*um;
+lambda_max = 1.6*um;
+lambda_steps = 21;
+
+wl_sweep = linspace(lambda_min,lambda_max,lambda_steps);
+
+
+# Simulation params
+
+wg_mesh_divs = 20;
+#wavelength0 = 1.55*um;  # longitud de onda
+n_modes = 2;            # cantidad de modos a analizar
+# freq = c/wavelength0;   # frecuencia
+
+fde_params = {
+    "x": 0,
+    "x span": 10*um,
+    "y": 0,
+    "y span": 10*um,
+    "x min bc": "Metal",
+    "x max bc": "Metal",
+    "y min bc": "Metal",
+    "y max bc": "Metal"
+};
+
+# Structure params
+
+wg_params = {
+    "name": "waveguide",
+    # "material": ... , 
+    "x": 0,
+    #"x_span": 0.2*um,
+    "y min": 0
+    #"y max": 220*nm
+};
+
+box_params = {
+    "name": "box",
+    "material": 'SiO2 (Glass) - Const',
+    "x": 0,
+    "x span": fde_params.%x span%*2,
+    "y min": -fde_params.%y span%,
+    "y max": 0
+};
+
+clad_params = {
+    "name": "cladding",
+    "material": 'SiO2 (Glass) - Const',
+    "x": 0,
+    "x span": fde_params.%x span%*2,
+    "y min": 0,
+    "y max": fde_params.%y span%,
+    "alpha": 0.2,
+    "override mesh order from material database": true,
+    "mesh order": 3
+};
+
+# Mesh params
+
+mesh_params = {
+    "name": "mesh",
+    "based on a structure": true,
+    "structure": wg_params.name
+    # "dx": wg_params.%x span% / wg_mesh_divs
+    # "dy": ((wg_params.%y max% - wg_params.%y min%) / wg_mesh_divs)
+};
+
+
+############# Create structure ################# 
+addrect(wg_params);
+addrect(box_params);
+addrect(clad_params);
+
+############# Create simulation #################
+addfde(fde_params);
+addmesh(mesh_params);
+
+
+##########################################
+
+setanalysis('number of trial modes',n_modes);
+
+############### Sweep ####################
+modes_found = zeros(length(material_sweep), length(wl_sweep));
+neff = zeros(length(material_sweep), length(wl_sweep), n_modes);
+ng = zeros(length(material_sweep), length(wl_sweep), n_modes);
+te_fraction = zeros(length(material_sweep), length(wl_sweep), n_modes);
+
+for (i=1:length(material_sweep)){
+    wg_params.material = material_sweep{i}.material;
+    wg_params.%y max% = material_sweep{i}.wg_H;
+    wg_params.%x span% = material_sweep{i}.wg_W;
+    
+    mesh_params.dx = wg_params.%x span% / wg_mesh_divs;
+    mesh_params.dy = (wg_params.%y max% - wg_params.%y min%) / wg_mesh_divs;
+
+    switchtolayout;
+    select(wg_params.name);
+    set(wg_params);
+    
+    select(mesh_params.name);
+    set(mesh_params);
+    for (j=1:length(wl_sweep)){
+        switchtolayout;
+        setanalysis('wavelength',wl_sweep(j));
+        
+        n = findmodes; # busca los modos de prop. n la cantidad de modos
+        modes_found(i,j) = n;        
+        
+        for (m=1:n){
+            mode = 'mode' + num2str(m);
+            neff(i,j,m) = getdata(mode,"neff");
+            ng(i,j,m) = getdata(mode,"ng");
+            te_fraction(i,j,m) = getdata(mode,"TE polarization fraction");
+        }
+    }
+}
+    
+############### Save results ####################
+
+matlabsave("ej2/out/wl_sweep.mat");
+jsonsave("ej2/out/wl_sweep.json");
+
+############### Plot ####################
+
+leg=cell(n_modes); # define the array of strings
+
+for (i=1:length(material_sweep)){
+    for (j=1:n_modes){
+        plot(wl_sweep/nm, abs(neff(i,:,j)));
+        holdon;
+        leg{j}="mode " + num2str(j);    
+    }
+    ?n_wg = getindex(material_sweep{i}.material,c/wl_sweep(1)*1.1;
+    ?n_box = getindex(box_params.material,freq);
+    
+    setplot("title", material_sweep{i}.material);
+    setplot("x label", "wavelength (nm)");
+    setplot("y label", "neff");
+    setplot("y min", n_box); 
+    setplot("y max", n_wg);
+    legend(leg);
+    holdoff;
+}
+
+
+for (i=1:length(material_sweep)){
+    for(j=1:n_modes){
+        plot(wl_sweep/nm,te_fraction(i,:,j));
+        holdon;
+    }
+    setplot("x label", "wavelength (nm)");
+    setplot("y label", "TE fraction");
+    legend(leg);
+    holdoff;
+}
+
+###################################
+
+
+
+
+
+
