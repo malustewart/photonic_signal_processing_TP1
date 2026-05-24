@@ -2,3 +2,6 @@
 *.mat
 *.mlx
 *.json
+
+ej_clase_bragg/*.txt
+ej_clase_bragg/*.png
