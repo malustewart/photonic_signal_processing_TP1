@@ -111,7 +111,7 @@ for (i=1:length(material_sweep)){
         wg_params.%y max% = material_sweep{i}.wg_H;
         wg_params.material = material_sweep{i}.material;
         
-        mesh_params.dx = wg_params.%x span%;
+        mesh_params.dx = wg_params.%x span% / wg_mesh_divs;
         mesh_params.dy = (wg_params.%y max% - wg_params.%y min%) / wg_mesh_divs;
 
         
