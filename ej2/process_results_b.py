@@ -104,15 +104,18 @@ for filename in filenames:
         for fit_order in range(1, max_fit_order):
             A = np.column_stack(x_powered[1:fit_order+1])
             bs = np.linalg.lstsq(A, y, rcond=None)[0]
-            coeff_file.append(f"Fit coefficients - order ({fit_order}) ({mode}):")
-            for i, b in enumerate(bs,1):
-                coeff_file.append(f"b{i} = {b:.6e}")
-            coeff_file.append("")
-
             n_fit = n0 + np.sum(bs[:, None] * x_powered[1:fit_order+1], axis=0)
             n_fit = np.squeeze(n_fit)
+            nmse = ((n - n_fit)**2).mean()/n.mean()
 
             plt.plot(wl, n_fit, "--", label=f"polyfit (n={fit_order})")
+
+            coeff_file.append(f"Fit coefficients ({mode}) - order {fit_order}:")
+            for i, b in enumerate(bs,1):
+                coeff_file.append(f"b{i} = {b:.6e}")
+            
+            coeff_file.append(f"nmse: {nmse}")
+            coeff_file.append("")
         
         plt.xlabel("wavelength [um]")
         plt.ylabel("n(w)")
@@ -122,7 +125,7 @@ for filename in filenames:
         outfile = Path(filename).with_suffix(f".{mode}.png")
         plt.savefig(outfile)
 
-with open("polyfit_coefs.txt", "w") as f:
+with open("out/polyfit_coefs.txt", "w") as f:
     f.write("\n".join(coeff_file))
 
 plt.show()
