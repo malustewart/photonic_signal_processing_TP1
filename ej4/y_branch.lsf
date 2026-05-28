@@ -1,0 +1,137 @@
+prepare_workspace;
+cleardcard;
+
+wg_material = "Si (Silicon) - Dispersive & Lossless";
+wg_H = 220*nm;
+wg_W = 0.3*um;
+alpha = 2; # dB/cm
+
+varfdtd_y_margin = 4*um;
+
+L_branch = 10*um;
+
+input_wg_params = {
+    "name": "input_wg",
+    "material": wg_material, 
+    "y": 0,
+    "y span": wg_W,
+    "z min": 0,
+    "z max": wg_H,
+    "x max": 0,
+    "x min": -L_branch
+};
+
+y_branch_struct_group_params = {
+    "name": "y_branch",
+    "x": 0,
+    "y": 0,
+    "z": 0
+};
+
+R = 2*um;
+theta = 30;
+
+arc_chord = R * 2 * sin((theta/2) * pi / 180);
+arc_delta_y = arc_chord * sin((theta/2) * pi / 180);
+arc_delta_x = arc_chord * cos((theta/2) * pi / 180);
+
+#top branch
+ring_top_1 = {
+    "name": "ring_top_1",
+    "material": wg_material, 
+    "y": R,
+    "x": 0,
+    "z min": 0,
+    "z max": wg_H,
+    "inner radius": R - wg_W/2,
+    "outer radius": R + wg_W/2,
+    "theta start": -90,
+    "theta stop": -90+theta
+};
+
+ring_top_2 = {
+    "name": "ring_top_2",
+    "material": wg_material, 
+    "y": -cos(theta * pi/180)*R+arc_delta_y,
+    "x": 2*arc_delta_x,
+    "z min": 0,
+    "z max": wg_H,
+    "inner radius": R - wg_W/2,
+    "outer radius": R + wg_W/2,
+    "theta start": 90,
+    "theta stop": 90+theta
+};
+
+#bottom branch
+ring_bottom_1 = {
+    "name": "ring_bottom_1",
+    "material": wg_material, 
+    "y": -R,
+    "x": 0,
+    "z min": 0,
+    "z max": wg_H,
+    "inner radius": R - wg_W/2,
+    "outer radius": R + wg_W/2,
+    "theta start": 90-theta,
+    "theta stop": 90
+};
+
+ring_bottom_2 = {
+    "name": "ring_bottom_2",
+    "material": wg_material, 
+    "y": cos(theta * pi/180)*R-arc_delta_y,
+    "x": 2*arc_delta_x,
+    "z min": 0,
+    "z max": wg_H,
+    "inner radius": R - wg_W/2,
+    "outer radius": R + wg_W/2,
+    "theta start": -90-theta,
+    "theta stop": -90
+};
+
+output_wg_top_params = {
+    "name": "output_wg_top",
+    "material": wg_material, 
+    "y": 2*arc_delta_y,
+    "y span": wg_W,
+    "z min": 0,
+    "z max": wg_H,
+    "x max": 2*arc_delta_x + L_branch,
+    "x min": 2*arc_delta_x
+};
+
+output_wg_bottom_params = {
+    "name": "output_wg_bottom",
+    "material": wg_material, 
+    "y": -2*arc_delta_y,
+    "y span": wg_W,
+    "z min": 0,
+    "z max": wg_H,
+    "x max": 2*arc_delta_x + L_branch,
+    "x min": 2*arc_delta_x
+};
+
+###############
+
+addstructuregroup(y_branch_struct_group_params);
+
+addrect(input_wg_params);
+addtogroup(y_branch_struct_group_params.name);
+
+addring(ring_top_1);
+addtogroup(y_branch_struct_group_params.name);
+
+addring(ring_top_2);
+addtogroup(y_branch_struct_group_params.name);
+
+addring(ring_bottom_1);
+addtogroup(y_branch_struct_group_params.name);
+
+addring(ring_bottom_2);
+addtogroup(y_branch_struct_group_params.name);
+
+addrect(output_wg_top_params);
+addtogroup(y_branch_struct_group_params.name);
+
+addrect(output_wg_bottom_params);
+addtogroup(y_branch_struct_group_params.name);
