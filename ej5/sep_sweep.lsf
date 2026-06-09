@@ -1,0 +1,295 @@
+prepare_workspace;
+cleardcard;
+helper_functions;
+
+# Material sweep:
+
+material_sweep = {
+    {
+        "material": "Si (Silicon) - Dispersive & Lossless", 
+        "wg_H": 220*nm,
+        "wg_W": 0.3*um
+    },
+    {
+        "material": "Si3N4 (Silicon Nitride) - Dispersive & Lossless", 
+        "wg_H": 400*nm,
+        "wg_W": 0.75*um
+    }
+};
+
+L_branch = 10*um;
+gs = linspace(0.1*um, 2*um, 10);
+R = 2*um;
+theta = 60;
+
+wg_top_params = {
+    "name": "top_wg",
+    # "material": wg_material, 
+    # "y max": g/2 + wg_W,
+    # "y min": g/2,
+    "z min": 0,
+    # "z max": wg_H,
+    "x max": L_branch/2,
+    "x min": -L_branch/2
+};
+
+wg_bottom_params = {
+    "name": "bottom_wg",
+    # "material": wg_material, 
+    # "y min": -g/2 - wg_W,
+    # "y max": -g/2,
+    "z min": 0,
+    # "z max": wg_H,
+    "x max": L_branch/2,
+    "x min": -L_branch/2
+};
+
+s_top_right_x = L_branch/2;
+s_top_right_corner = "bl";
+s_top_right_name = "curve_top_right";
+
+s_bottom_right_x = L_branch/2;
+s_bottom_right_corner = "tl";
+s_bottom_right_name = "curve_bottom_right";
+
+s_top_left_x = -L_branch/2;
+s_top_left_corner = "br";
+s_top_left_name = "curve_top_left";
+
+s_bottom_left_x = -L_branch/2;
+s_bottom_left_corner = "tr";
+s_bottom_left_name = "curve_bottom_left";
+
+#output_wg_top_params = {
+    #"name": "output_wg_top",
+    ## "material": wg_material, 
+    ## "y": 2*deltas.delta_y,
+    ## "y span": wg_W,
+    #"z min": 0
+    ## "z max": wg_H
+    ## "x max": L_branch /2 + 2*deltas.delta_x + L_branch,
+    ## "x min": L_branch /2 + 2*deltas.delta_x
+#};
+
+#output_wg_bottom_params = {
+    #"name": "output_wg_bottom",
+    ## "material": wg_material, 
+    ## "y": 2*deltas.delta_y,
+    ## "y span": wg_W,
+    #"z min": 0
+    ## "z max": wg_H
+    ## "x max": L_branch /2 + 2*deltas.delta_x + L_branch,
+    ## "x min": L_branch /2 + 2*deltas.delta_x
+#};
+
+# Simulation params
+
+wg_mesh_divs = 20;
+wavelength0 = 1.55*um;  # longitud de onda
+n_modes = 2;            # cantidad de modos a analizar
+# freq = c/wavelength0;   # frecuencia
+
+fde_params = {
+    "z": 0,
+    "z span": 10*um,
+    "y": 0,
+    "y span": 10*um,
+    "x": 0,
+    "z min bc": "Metal",
+    "z max bc": "Metal",
+    "y min bc": "Metal",
+    "y max bc": "Metal",
+    "solver type": "2D X normal"
+};
+
+
+# Mesh params
+
+mesh_params = {
+    "name": "mesh",
+    "y": 0,
+    "x": 0,
+    "x span": L_branch*0.9
+};
+
+gap_mesh_params = {
+    "name": "gap mesh",
+    "y": 0,
+    "x": 0,
+    "x span": L_branch*0.9
+};
+
+############# Create structure #################
+#addrect(output_wg_top_params);
+#addrect(output_wg_bottom_params);
+addrect(wg_bottom_params);
+addrect(wg_top_params);
+material = material_sweep{1}.material;
+W = material_sweep{1}.wg_W;
+H = material_sweep{1}.wg_H;
+#s_shape_create(R, theta, 0,0,"br","curve_top_left", material, W, H);
+#s_shape_create(R, theta, 0,0,"bl","curve_top_right", material, W, H);
+#s_shape_create(R, theta, 0,0,"tr","curve_bottom_left", material, W, H);
+#s_shape_create(R, theta, 0,0,"tl","curve_bottom_right", material, W, H);
+
+############# Create simulation #################
+addfde(fde_params);
+addmesh(mesh_params);
+addmesh(gap_mesh_params);
+
+##########################################
+
+setanalysis('number of trial modes',n_modes);
+
+############### Sweep ####################
+modes_found = zeros(length(material_sweep), length(gs));
+Ldc = zeros(length(material_sweep), length(gs));
+neff = zeros(length(material_sweep), length(gs), n_modes);
+ng = zeros(length(material_sweep), length(gs), n_modes);
+te_fraction = zeros(length(material_sweep), length(gs), n_modes);
+
+for (i=1:length(material_sweep)){
+    wg_material = material_sweep{i}.material;
+    wg_H = material_sweep{i}.wg_H;
+    wg_W = material_sweep{i}.wg_W;
+
+    wg_top_params.material = wg_material;
+    wg_top_params.%z max% = wg_H;
+    wg_top_params.%y span% = wg_W;
+
+    wg_bottom_params.material = wg_material;
+    wg_bottom_params.%z max% = wg_H;
+    wg_bottom_params.%y span% = wg_W;
+    
+    #output_wg_top_params.%y span% = wg_W;
+    #output_wg_top_params.%z max% = wg_H;
+    
+    #output_wg_bottom_params.%y span% = wg_W;
+    #output_wg_bottom_params.%z max% = wg_H;
+    
+    mesh_params.z = wg_H/2;
+    gap_mesh_params.z = wg_H/2;
+    mesh_params.%z span% = wg_H*1.5;
+    gap_mesh_params.%z span% = wg_H;
+    mesh_params.dz = mesh_params.%z span% / wg_mesh_divs;
+    gap_mesh_params.dz = gap_mesh_params.%z span% / wg_mesh_divs;
+
+    switchtolayout;
+    setnamed(wg_top_params.name, wg_top_params);
+    setnamed(wg_bottom_params.name, wg_bottom_params);
+
+    for (j=1:length(gs)){
+
+        switchtolayout;
+        g = gs(j);
+
+        # update center wgs
+        wg_top_params.y = g/2 + wg_W/2;
+        wg_bottom_params.y = -g/2 - wg_W/2;
+        setnamed(wg_top_params.name, wg_top_params);
+        setnamed(wg_bottom_params.name, wg_bottom_params);
+
+        # update curves
+        s_top_right_y = g/2 + wg_W/2;
+        s_bottom_right_y = -g/2 - wg_W/2;
+        s_top_left_y = g/2 + wg_W/2;
+        s_bottom_left_y = -g/2 - wg_W/2;
+        
+        #deltas = s_shape_update(
+            #R, 
+            #theta, 
+            #s_top_right_x, 
+            #s_top_right_y, 
+            #s_top_right_corner, 
+            #s_top_right_name, 
+            #wg_material, 
+            #wg_W, 
+            #wg_H
+        #);
+
+        #s_shape_update(
+            #R, 
+            #theta, 
+            #s_top_left_x, 
+            #s_top_left_y, 
+            #s_top_left_corner, 
+            #s_top_left_name, 
+            #wg_material, 
+            #wg_W, 
+            #wg_H
+        #);
+
+        #s_shape_update(
+            #R, 
+            #theta, 
+            #s_bottom_right_x, 
+            #s_bottom_right_y, 
+            #s_bottom_right_corner, 
+            #s_bottom_right_name, 
+            #wg_material, 
+            #wg_W, 
+            #wg_H
+        #);
+
+        #s_shape_update(
+            #R, 
+            #theta, 
+            #s_bottom_left_x, 
+            #s_bottom_left_y, 
+            #s_bottom_left_corner, 
+            #s_bottom_left_name, 
+            #wg_material, 
+            #wg_W, 
+            #wg_H
+        #);
+
+        # update output wgs
+        
+        #output_wg_top_params.y = g/2 + wg_W/2 + deltas.%delta y%;
+        #output_wg_top_params.%x min% = L_branch/2 + deltas.%delta x%;
+        #output_wg_top_params.%x max% = L_branch/2 + deltas.%delta x% + L_branch;
+
+        #output_wg_bottom_params.y = -g/2 - wg_W/2 -deltas.%delta y%;
+        #output_wg_bottom_params.%x min% = L_branch/2 + deltas.%delta x%;
+        #output_wg_bottom_params.%x max% = L_branch/2 + deltas.%delta x% + L_branch;
+
+        #setnamed(output_wg_bottom_params.name, output_wg_bottom_params);
+        #setnamed(output_wg_top_params.name, output_wg_top_params);
+        
+        # update mesh
+        
+        mesh_params.%y span% = (2*wg_W + g)*1.5;
+        gap_mesh_params.%y span% = g;
+        mesh_params.dy = mesh_params.%y span% / wg_mesh_divs;
+        gap_mesh_params.dy = 1 * nm;
+        setnamed(mesh_params.name, mesh_params);
+        setnamed(gap_mesh_params.name, gap_mesh_params);
+
+        # calc modes
+
+        n = findmodes;
+        modes_found(i,j) = n;        
+        
+        for (m=1:n){
+            mode = 'mode' + num2str(m);
+            neff(i,j,m) = getdata(mode,"neff");
+            ng(i,j,m) = getdata(mode,"ng");
+            te_fraction(i,j,m) = getdata(mode,"TE polarization fraction");
+        }
+        print(neff(i,j,1));
+        print(neff(i,j,2));
+        Ldc(i,j) = 1550*nm/(2*(abs(neff(i,j,1))-abs(neff(i,j,2))));
+    }
+
+}
+
+
+############### Save results ####################
+
+matlabsave("ej5/out/gap_sweep.mat");
+jsonsave("ej5/out/gap_sweep.json");   
+
+############### Plot ####################
+
+plot(gs/nm,Ldc(1,:)/um,"gap (nm) (material 1)", "Ldc (um)"); 
+plot(gs/nm,Ldc(2,:)/um,"gap (nm) (material 1)", "Ldc (um)"); 
