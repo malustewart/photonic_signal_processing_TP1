@@ -1,0 +1,94 @@
+# corner:
+#   tr: top right
+#   tl: top left
+#   br: bottom right
+#   bl: bottom left
+#
+function s_shape_create(R, theta, x_corner, y_corner, corner, name, wg_material, wg_W, wg_H) {
+    addring({"name": name + "_1"});
+    addring({"name": name + "_2"});
+    return s_shape_update(R, theta, x_corner, y_corner, corner, name, wg_material, wg_W, wg_W);
+}
+
+# corner:
+#   tr: top right
+#   tl: top left
+#   br: bottom right
+#   bl: bottom left
+#
+function s_shape_update(R, theta, x_corner, y_corner, corner, name, wg_material, wg_W, wg_H) {
+    arc_chord = R * 2 * sin((theta/2) * pi / 180);
+    arc_delta_y = arc_chord * sin((theta/2) * pi / 180);
+    arc_delta_x = arc_chord * cos((theta/2) * pi / 180);
+
+    if (corner == "tr"){
+        x_corner = x_corner - 2 * arc_delta_x;
+        y_corner = y_corner - 2 * arc_delta_y;
+        corner = "bl";
+        
+    } else if (corner == "tl"){
+        x_corner = x_corner + 2 * arc_delta_x;
+        y_corner = y_corner - 2 * arc_delta_y;
+        corner = "br";
+    }
+
+    if (corner == "bl"){
+        y1 = y_corner + R;
+        y2 = y_corner -R + 2 * arc_delta_y;
+
+        x1 = x_corner;
+        x2 = x_corner + 2*arc_delta_x;
+
+        theta_start_1 = -90;
+        theta_stop_1 = -90+theta;
+        theta_start_2 = 90;
+        theta_stop_2 = 90+theta;
+
+    } else if (corner == "br"){
+        y1 = y_corner + R;
+        y2 = y_corner -R + 2 * arc_delta_y;
+
+        x1 = x_corner;
+        x2 = x_corner - 2*arc_delta_x;
+
+        theta_start_1 = -90-theta;
+        theta_stop_1 = -90;
+        theta_start_2 = 90-theta;
+        theta_stop_2 = 90;
+
+    }
+
+    ring_1 = {
+        "name": name + "_1",
+        "material": wg_material, 
+        "y": y1,
+        "x": x1,
+        "z min": 0,
+        "z max": wg_H,
+        "inner radius": R - wg_W/2,
+        "outer radius": R + wg_W/2,
+        "theta start": theta_start_1,
+        "theta stop": theta_stop_1
+    };
+
+    ring_2 = {
+        "name": name + "_2",
+        "material": wg_material, 
+        "y": y2,
+        "x": x2,
+        "z min": 0,
+        "z max": wg_H,
+        "inner radius": R - wg_W/2,
+        "outer radius": R + wg_W/2,
+        "theta start": theta_start_2,
+        "theta stop": theta_stop_2
+    };
+
+    setnamed(ring_1.name, ring_1);
+    setnamed(ring_2.name, ring_2);
+
+    deltas = struct;
+    deltas.%delta x% = 2*arc_delta_x;
+    deltas.%delta y% = 2*arc_delta_y;
+    return deltas;
+}
