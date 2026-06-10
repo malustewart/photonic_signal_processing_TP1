@@ -19,8 +19,8 @@ material_sweep = {
 
 # lambda sweep params
 radius_min = 2*um;
-radius_max = 100*um;
-radius_steps = 20;
+radius_max = 120*um;
+radius_steps = 30;
 
 radius_sweep = 10^linspace(log10(radius_min),log10(radius_max),radius_steps);
 
