@@ -64,7 +64,7 @@ De la @fig:ej1_neff_vs_W se obtienen los rangos de $W$ que aseguran operación m
 
 #figure(
     table(
-        columns: 4,
+        columns: 3,
         [*Plataforma*], [*$W_"min"$ (nm)*],[*$W_"max"$ (nm)*],
         [Si (H=220 nm)], [140],[420],
         [SiN (H=400 nm)], [140],[1100],
@@ -256,18 +256,91 @@ Al tener un $R_"opt"$ menor con $L_"min"$ menor, la plataforma de silicio permit
 
 = Acoplador direccional: longitud de _crossover_ vs. _gap_
 
+Se busca mediante simulación la longitud de crossover ($L_"crossover"$) en función de la distancia entre dos guías (gap, o $g$). Se consideran los siguientes casos:
+
+#figure(
+    table(
+        columns: 3,
+        [*Propiedad*],[*Caso A*],[*Caso B*],
+        [Material],[Si],[SiN],
+        [$W$ [nm]],[500],[1000],
+        [$H$ [nm]],[220],[400],
+    )
+)
+
+Para ambos casos:
+ - Se realiza un barrido de gaps entre $0.1 mu"m"$ y $2 mu"m"$.
+ - Se obtiene el campo eléctrico y el índice de los supermodos simétrico y antisimétrico.
+ - Se calcula $L_"crossover"$ a partir de los índices de los supermodos simétrico y antisimétrico $n_s$ y $n_a$ respectivamente de acuerdo a la fórmula:
+ $
+   L_"crossover" = lambda/(2(n_s-n_a))
+ $
+ - Se realiza un ajuste exponencial de $L_"crossover"$ en función de $g$:
+ $
+   L_"crossover" = A dot e^(B dot g)
+ $
 == Cálculo de modos simétrico y antisimétrico
 
-#todo-inline([grafico E_real en 2D])
-#todo-inline([grafico E_real en 1D])
+Para el caso A, se muestra el campo $E_x (x,y)$ en cortes transversales 2D de la guías en la @fig:ej5_sim_xy_A (supermodo simétrico) y @fig:ej5_antisim_xy_A (supermodo antisimétrico) para $g=7.5mu$m. También se muestra el campo $E_x (x,y=H/2)$ en un corte transversal 1D de las guías para en la @fig:ej5_x_A.
+
+#figure(
+    image("figs/ej5/sim_xy_A.png"),
+    caption: [$E(x)$ vs $x$ de modo simétrico (corte transversal 2D) para caso A.]
+)<fig:ej5_sim_xy_A>
+
+#figure(
+    image("figs/ej5/antisim_xy_A.PNG"),
+    caption: [$E(x)$ vs $x$  de modo antisimétrico (corte transversal 2D) para caso A.]
+)<fig:ej5_antisim_xy_A>
+
+#figure(
+    image("figs/ej5/antisim_x_A.PNG"),
+    caption: [$E(x)$ vs $x$  de modo simétrico (azul) y antisimétrico (rojo) (corte transversal 1D en el centro de la guía) para caso A.]
+)<fig:ej5_x_A>
+
+Para el caso A, se muestra el campo $E_x (x,y)$ en cortes transversales 2D de la guías en la @fig:ej5_sim_xy_B (supermodo simétrico) y @fig:ej5_antisim_xy_B (supermodo antisimétrico) para $g=7.5mu$m. También se muestra el campo $E_x (x,y=H/2)$ en un corte transversal 1D de las guías para en la @fig:ej5_x_B.
+
+#figure(
+    image("figs/ej5/sim_xy.PNG"),
+    caption: [$E(x)$ vs $x$ de modo simétrico (corte transversal 2D) para caso B.]
+)<fig:ej5_sim_xy_B>
+
+#figure(
+    image("figs/ej5/antisim_xy.PNG"),
+    caption: [$E(x)$ vs $x$  de modo antisimétrico (corte transversal 2D) para caso B.]
+)<fig:ej5_antisim_xy_B>
+
+#figure(
+    image("figs/ej5/antisim_x.PNG"),
+    caption: [$E(x)$ vs $x$  de modo simétrico (azul) y antisimétrico (rojo) (corte transversal 1D en el centro de la guía) para caso B.]
+)<fig:ej5_x_B>
+
+
 
 == Longitud de cross-over vs. gap
-#todo-inline([tabla ns y na, y Lc resultante (en funcion del gap)])
+
+La @fig:ej5_Lg_vs_g_silicio y @fig:ej5_Lg_vs_g_nitruro muestran $L_"crossover"$ en función del gap entre guías para los casos A y B respectivamente. Se observa que al aumentar el gap aumenta $L_"crossover"$. Esto es debido a que al separar las guías se reduce su acoplamiento debido a que el campo evanescente de una guía que se superpone a la otra es cada vez menor. Por lo tanto, requiere más distancia para lograr el mismo efecto.
+
+#figure(
+    image("figs/ej5/sim_0.png"),
+    caption: [$L_"crossover"$ vs. gap para caso A.]
+)<fig:ej5_Lg_vs_g_silicio>
+
+#figure(
+    image("figs/ej5/sim_1.png"),
+    caption: [$L_"crossover"$ vs. gap para caso B.]
+)<fig:ej5_Lg_vs_g_nitruro>
 
 == Ajuste exponencial
-#todo-inline([grafico sim vs ajuste])
-#todo-inline([tabla de A, B])
-
+#figure(
+    table(
+        columns: 3,
+        [*Platform*],[*A [$mu"m"$]*],[*B [$mu"m"^(-1)$]*],
+        [Si (caso A)], [15.27], [14.32],
+        [SiN (caso B)], [8.95], [4.97],
+    ),
+    caption: [Coeficientes de ajuste exponencial ($L_"crossover" = A dot e^(B dot g)$).]
+)
 
 = Diseño de acoplador direccional de 3 dB
 

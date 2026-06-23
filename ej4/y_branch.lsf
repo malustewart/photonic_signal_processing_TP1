@@ -1,14 +1,42 @@
 prepare_workspace;
 cleardcard;
 
+# structure params
 wg_material = "Si (Silicon) - Dispersive & Lossless";
+clad_material = "SiO2 (Glass) - Const";
 wg_H = 220*nm;
 wg_W = 0.3*um;
 alpha = 2; # dB/cm
-
-varfdtd_y_margin = 4*um;
-
 L_branch = 10*um;
+
+# varfdtd params
+varfdtd_x_margin = 2*um;
+varfdtd_y_margin = 3*um;
+varfdtd_z_margin = 2*um;
+varfdtd_mesh = 3;
+
+# lambda params
+lambda_min = 1.5*um;
+lambda_max = 1.6*um;
+lambda_0 = (lambda_min + lambda_max)/2;
+lambda_span = lambda_max - lambda_min;
+lambda_steps = 21;
+
+# theta sweep params
+theta_min = 15;
+theta_max = 90;
+n_theta = 11;
+
+theta_sweep = linspace(theta_min, theta_max, n_theta);
+
+############ vars to store results ##############
+
+S_11 = zeros(n_theta, lambda_steps);
+S_top = zeros(n_theta, lambda_steps);
+S_bot = zeros(n_theta, lambda_steps);
+lambda_sweep = zeros(lambda_steps);
+
+############ Estructura ##########
 
 input_wg_params = {
     "name": "input_wg",
@@ -28,7 +56,7 @@ y_branch_struct_group_params = {
     "z": 0
 };
 
-R = 2*um;
+R = 10*um;
 theta = 30;
 
 arc_chord = R * 2 * sin((theta/2) * pi / 180);
@@ -36,7 +64,7 @@ arc_delta_y = arc_chord * sin((theta/2) * pi / 180);
 arc_delta_x = arc_chord * cos((theta/2) * pi / 180);
 
 #top branch
-ring_top_1 = {
+ring_top_1_params = {
     "name": "ring_top_1",
     "material": wg_material, 
     "y": R,
@@ -49,7 +77,7 @@ ring_top_1 = {
     "theta stop": -90+theta
 };
 
-ring_top_2 = {
+ring_top_2_params = {
     "name": "ring_top_2",
     "material": wg_material, 
     "y": -cos(theta * pi/180)*R+arc_delta_y,
@@ -63,7 +91,7 @@ ring_top_2 = {
 };
 
 #bottom branch
-ring_bottom_1 = {
+ring_bottom_1_params = {
     "name": "ring_bottom_1",
     "material": wg_material, 
     "y": -R,
@@ -76,7 +104,7 @@ ring_bottom_1 = {
     "theta stop": 90
 };
 
-ring_bottom_2 = {
+ring_bottom_2_params = {
     "name": "ring_bottom_2",
     "material": wg_material, 
     "y": cos(theta * pi/180)*R-arc_delta_y,
@@ -111,27 +139,253 @@ output_wg_bottom_params = {
     "x min": 2*arc_delta_x
 };
 
-###############
-
-addstructuregroup(y_branch_struct_group_params);
 
 addrect(input_wg_params);
-addtogroup(y_branch_struct_group_params.name);
-
-addring(ring_top_1);
-addtogroup(y_branch_struct_group_params.name);
-
-addring(ring_top_2);
-addtogroup(y_branch_struct_group_params.name);
-
-addring(ring_bottom_1);
-addtogroup(y_branch_struct_group_params.name);
-
-addring(ring_bottom_2);
-addtogroup(y_branch_struct_group_params.name);
-
+addring(ring_top_1_params);
+addring(ring_top_2_params);
+addring(ring_bottom_1_params);
+addring(ring_bottom_2_params);
 addrect(output_wg_top_params);
-addtogroup(y_branch_struct_group_params.name);
-
 addrect(output_wg_bottom_params);
-addtogroup(y_branch_struct_group_params.name);
+
+############ Parámetros varFDTD ##########
+
+varfdtd_xspan =  2 * arc_delta_x + 2 * varfdtd_x_margin;
+varfdtd_x = arc_delta_x;
+
+varfdtd_yspan = wg_W + 4*arc_delta_y + 2*varfdtd_y_margin;
+varfdtd_y = 0;
+
+varfdtd_margin = 0.8;
+
+test_point_x_right = varfdtd_xspan/2 * varfdtd_margin;
+test_point_x_left =  -varfdtd_xspan/2 * varfdtd_margin;
+test_point_y_top = varfdtd_yspan/2 * varfdtd_margin;
+test_point_y_bot = -varfdtd_yspan/2 * varfdtd_margin;
+
+test_points_x = [test_point_x_right; test_point_x_right; test_point_x_left; test_point_x_left];
+test_points_y = [test_point_y_top; test_point_y_bot; test_point_y_top; test_point_y_bot];
+
+varfdtd_params = {
+    'background material': clad_material,
+    'x': varfdtd_x,
+    'x span': varfdtd_xspan,
+    'y': varfdtd_y,
+    'y span': varfdtd_yspan,
+    'z': wg_H/2,
+    'z span': wg_H + 2*varfdtd_z_margin,
+    'mesh accuracy': varfdtd_mesh,
+    'x0': -arc_delta_x,
+    'y0': 0
+};
+
+addvarfdtd(varfdtd_params);
+set("test points",[test_points_x, test_points_y]);
+
+############ Fuente ######################
+mode_source_params = {
+    'x': varfdtd_x - varfdtd_xspan/2 + 1*um,
+    'y': 0,
+    'y span': 10 * wg_W,
+    'set wavelength': true,
+    'center wavelength': lambda_0,
+    'wavelength span': lambda_span
+};
+
+addmodesource(mode_source_params);
+
+############ Monitores ######################
+
+power_monitor_in_params = {
+    'name': 'T_in',
+    'monitor type': 3,
+    'x': varfdtd_x - varfdtd_xspan/2 + 2*um,
+    'y': 0,
+    'y span': 5*wg_W,
+    'z': wg_H/2
+};
+addpower(power_monitor_in_params);
+
+power_monitor_out_top_params = {
+    'name': 'T_out_top',
+    'monitor type': 3,
+    'x': varfdtd_x + varfdtd_xspan/2 - 1*um,
+    'y': 2*arc_delta_y,
+    'y span': 5*wg_W,
+    'z': wg_H/2
+};
+addpower(power_monitor_out_top_params);
+
+power_monitor_out_bot_params = {
+    'name': 'T_out_bot',
+    'monitor type': 3,
+    'x': varfdtd_x + varfdtd_xspan/2 - 1*um,
+    'y': -2*arc_delta_y,
+    'y span': 5*wg_W,
+    'z': wg_H/2
+};
+addpower(power_monitor_out_bot_params);
+
+power_monitor_profile_params = {
+    'name': 'monitor',
+    'x': varfdtd_x,
+    'x span': varfdtd_xspan,
+    'y': varfdtd_y,
+    'y span': varfdtd_yspan,
+    'z': wg_H/2
+};
+addpower(power_monitor_profile_params);
+
+setglobalmonitor('frequency points', lambda_steps);
+
+############ Mode expansion ##############
+
+mode_expansion_params = {
+    "name": "modeexpansion",
+    "x": -varfdtd_x_margin + 2*um,
+    "y": 0,
+    "y span": 5*wg_W,
+    "z": wg_H/2,
+    "align to frequency monitor center": true
+};
+addmodeexpansion(mode_expansion_params);
+
+setexpansion("T_in",  "T_in");
+setexpansion("T_top", "T_out_top");
+setexpansion("T_bot", "T_out_bot");
+
+
+for (j=1:n_theta){
+
+    switchtolayout;
+
+    theta = theta_sweep(j);
+
+    ############ Update estructura ###########
+
+    arc_chord = R * 2 * sin((theta/2) * pi / 180);
+    arc_delta_y = arc_chord * sin((theta/2) * pi / 180);
+    arc_delta_x = arc_chord * cos((theta/2) * pi / 180);
+
+    #top branch
+    ring_top_1_params.%theta stop% = -90+theta;
+
+    ring_top_2_params.y = -cos(theta * pi/180)*R + arc_delta_y;
+    ring_top_2_params.x = 2*arc_delta_x;
+    ring_top_2_params.%theta stop% = 90 + theta;
+
+    output_wg_top_params.y = 2*arc_delta_y;
+    output_wg_top_params.%x max% = 2*arc_delta_x + L_branch;
+    output_wg_top_params.%x min% = 2*arc_delta_x;
+
+    # bottom branch
+    ring_bottom_1_params.%theta start% = 90 - theta;
+
+    ring_bottom_2_params.y = cos(theta * pi/180)*R - arc_delta_y;
+    ring_bottom_2_params.x = 2*arc_delta_x;
+    ring_bottom_2_params.%theta start% = -90 - theta;
+
+    output_wg_bottom_params.y = -2*arc_delta_y;
+    output_wg_bottom_params.%x max% = 2*arc_delta_x + L_branch;
+    output_wg_bottom_params.%x min% = 2*arc_delta_x;
+
+    setnamed(ring_top_1_params.name, ring_top_1_params);
+    setnamed(ring_top_2_params.name, ring_top_2_params);
+    setnamed(ring_bottom_1_params.name, ring_bottom_1_params);
+    setnamed(ring_bottom_2_params.name, ring_bottom_2_params);
+    setnamed(output_wg_top_params.name, output_wg_top_params);
+    setnamed(output_wg_bottom_params.name, output_wg_bottom_params);
+
+    ############ Parámetros varFDTD ##########
+
+    varfdtd_xspan =  2 * arc_delta_x + 2 * varfdtd_x_margin;
+    varfdtd_x = arc_delta_x;
+    varfdtd_yspan = wg_W + 4*arc_delta_y + 2*varfdtd_y_margin;
+
+    test_point_x_right = varfdtd_xspan/2 * varfdtd_margin;
+    test_point_x_left =  -varfdtd_xspan/2 * varfdtd_margin;
+    test_point_y_top = varfdtd_yspan/2 * varfdtd_margin;
+    test_point_y_bot = -varfdtd_yspan/2 * varfdtd_margin;
+
+    test_points_x = [test_point_x_right; test_point_x_right; test_point_x_left; test_point_x_left];
+    test_points_y = [test_point_y_top; test_point_y_bot; test_point_y_top; test_point_y_bot];
+
+    varfdtd_params.x = varfdtd_x;
+    varfdtd_params.%x span% = varfdtd_xspan;
+    varfdtd_params.%y span% = varfdtd_yspan;
+    varfdtd_params.%z span% = wg_H + 2*varfdtd_z_margin;
+    varfdtd_params.x0 = -arc_delta_x;
+
+    select("varFDTD");
+    set(varfdtd_params);
+    set("test points",[test_points_x, test_points_y]);
+
+    ############ Fuente ######################
+    mode_source_params.x = varfdtd_x - varfdtd_xspan/2 + 1*um;
+
+    select("source");
+    set(mode_source_params);
+
+    ############ Monitores ######################
+
+    power_monitor_in_params.x = varfdtd_x - varfdtd_xspan/2 + 2*um;
+    setnamed(power_monitor_in_params.name, power_monitor_in_params);
+
+    power_monitor_out_top_params.x = varfdtd_x + varfdtd_xspan/2 - 1*um;
+    power_monitor_out_top_params.y = 2*arc_delta_y;
+    setnamed(power_monitor_out_top_params.name, power_monitor_out_top_params);
+
+    power_monitor_out_bot_params.x = varfdtd_x + varfdtd_xspan/2 - 1*um;
+    power_monitor_out_bot_params.y = -2*arc_delta_y;
+    setnamed(power_monitor_out_bot_params.name, power_monitor_out_bot_params);
+
+    power_monitor_profile_params.x = varfdtd_x;
+    power_monitor_profile_params.%x span% = varfdtd_xspan;
+    power_monitor_profile_params.y = varfdtd_y;
+    power_monitor_profile_params.%y span% = varfdtd_yspan;
+    setnamed(power_monitor_profile_params.name, power_monitor_profile_params);
+
+
+    ############ Mode expansion ##############
+
+    mode_expansion_params.x = -varfdtd_x_margin + 2*um;
+    setnamed(mode_expansion_params.name, mode_expansion_params);
+
+    # setexpansion("T_in",  "T_in");
+    # setexpansion("T_top", "T_out_top");
+    # setexpansion("T_bot", "T_out_bot");
+
+    ############ run sim ##############
+
+    run;
+
+    expansion_input = getresult('modeexpansion','expansion for T_in');
+    expansion_bot   = getresult('modeexpansion','expansion for T_bot');
+    expansion_top   = getresult('modeexpansion','expansion for T_top');
+
+    S_11(j,:) = expansion_input.b/expansion_input.a;
+    S_top(j,:) = expansion_top.a/expansion_input.a;
+    S_bot(j,:) = expansion_bot.a/expansion_input.a;
+    
+    lambda_sweep(:,1) = expansion_top.lambda;
+    # P_(j,:) = abs(S_top(j))^2 + abs(S_bot(j))^2;
+
+    # Stop = expansion_top.a/expansion_input.a;
+    # Sbot = expansion_bot.a/expansion_input.a;
+
+    # P = abs(Stop)^2 + abs(Sbot)^2;
+    # IL = -10*log10(P);
+    # IL_1550 = IL(ceil(length(IL)));
+
+    # plot(expansion_top.lambda,abs(S_top(j))^2,abs(S_bot(j))^2);
+    # plot(expansion_top.lambda, IL);
+
+    ############ Campo ####################### 
+    profile = getresult('monitor','E'); 
+    plot_profile_xy(profile);
+    exportfigure("ej4/out/y_branch_optimization_profile_" + num2str(theta, "%.2f") + ".jpg");
+}
+
+############ Save results ####################### 
+jsonsave("ej4/out/y_branch_optimization_profile.json", S_11, S_top, S_bot, lambda_sweep, theta_sweep);    
+matlabsave("ej4/out/y_branch_optimization_profile.mat");

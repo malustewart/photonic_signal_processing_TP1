@@ -6,7 +6,7 @@ material_sweep = {
     {
         "material": "Si (Silicon) - Dispersive & Lossless", 
         "wg_H": 220*nm,
-        "wg_W": 0.3*um
+        "wg_W": 0.5*um
     },
     {
         "material": "Si3N4 (Silicon Nitride) - Dispersive & Lossless", 

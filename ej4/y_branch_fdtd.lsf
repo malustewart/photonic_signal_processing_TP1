@@ -1,0 +1,291 @@
+prepare_workspace;
+cleardcard;
+
+# structure params
+wg_material = "Si (Silicon) - Dispersive & Lossless";
+clad_material = "SiO2 (Glass) - Const";
+wg_H = 220*nm;
+wg_W = 0.3*um;
+alpha = 2; # dB/cm
+L_branch = 10*um;
+
+# varfdtd params
+fdtd_x_margin = 2*um;
+fdtd_y_margin = 3*um;
+fdtd_z_margin = 2*um;
+fdtd_mesh = 2;
+
+# lambda params
+lambda_min = 1.5*um;
+lambda_max = 1.6*um;
+lambda_0 = (lambda_min + lambda_max)/2;
+lambda_span = lambda_max - lambda_min;
+lambda_steps = 21;
+
+# theta sweep params
+theta_min = 30;
+theta_max = 30;
+n_theta = 1;
+
+theta_sweep = linspace(theta_min, theta_max, n_theta);
+
+
+############ vars to store results ##############
+
+# S_11 = zeros(n_theta, lambda_steps);
+# S_top = zeros(n_theta, lambda_steps);
+# S_bot = zeros(n_theta, lambda_steps);
+# lambda_sweep = zeros(lambda_steps);
+
+S_11 = zeros(lambda_steps);
+S_top = zeros(lambda_steps);
+S_bot = zeros(lambda_steps);
+lambda_sweep = zeros(lambda_steps);
+
+############ Estructura ##########
+
+input_wg_params = {
+    "name": "input_wg",
+    "material": wg_material, 
+    "y": 0,
+    "y span": wg_W,
+    "z min": 0,
+    "z max": wg_H,
+    "x max": 0,
+    "x min": -L_branch
+};
+
+y_branch_struct_group_params = {
+    "name": "y_branch",
+    "x": 0,
+    "y": 0,
+    "z": 0
+};
+
+R = 10*um;
+theta = 30;
+
+arc_chord = R * 2 * sin((theta/2) * pi / 180);
+arc_delta_y = arc_chord * sin((theta/2) * pi / 180);
+arc_delta_x = arc_chord * cos((theta/2) * pi / 180);
+
+#top branch
+ring_top_1_params = {
+    "name": "ring_top_1",
+    "material": wg_material, 
+    "y": R,
+    "x": 0,
+    "z min": 0,
+    "z max": wg_H,
+    "inner radius": R - wg_W/2,
+    "outer radius": R + wg_W/2,
+    "theta start": -90,
+    "theta stop": -90+theta
+};
+
+ring_top_2_params = {
+    "name": "ring_top_2",
+    "material": wg_material, 
+    "y": -cos(theta * pi/180)*R+arc_delta_y,
+    "x": 2*arc_delta_x,
+    "z min": 0,
+    "z max": wg_H,
+    "inner radius": R - wg_W/2,
+    "outer radius": R + wg_W/2,
+    "theta start": 90,
+    "theta stop": 90+theta
+};
+
+#bottom branch
+ring_bottom_1_params = {
+    "name": "ring_bottom_1",
+    "material": wg_material, 
+    "y": -R,
+    "x": 0,
+    "z min": 0,
+    "z max": wg_H,
+    "inner radius": R - wg_W/2,
+    "outer radius": R + wg_W/2,
+    "theta start": 90-theta,
+    "theta stop": 90
+};
+
+ring_bottom_2_params = {
+    "name": "ring_bottom_2",
+    "material": wg_material, 
+    "y": cos(theta * pi/180)*R-arc_delta_y,
+    "x": 2*arc_delta_x,
+    "z min": 0,
+    "z max": wg_H,
+    "inner radius": R - wg_W/2,
+    "outer radius": R + wg_W/2,
+    "theta start": -90-theta,
+    "theta stop": -90
+};
+
+output_wg_top_params = {
+    "name": "output_wg_top",
+    "material": wg_material, 
+    "y": 2*arc_delta_y,
+    "y span": wg_W,
+    "z min": 0,
+    "z max": wg_H,
+    "x max": 2*arc_delta_x + L_branch,
+    "x min": 2*arc_delta_x
+};
+
+output_wg_bottom_params = {
+    "name": "output_wg_bottom",
+    "material": wg_material, 
+    "y": -2*arc_delta_y,
+    "y span": wg_W,
+    "z min": 0,
+    "z max": wg_H,
+    "x max": 2*arc_delta_x + L_branch,
+    "x min": 2*arc_delta_x
+};
+
+
+addrect(input_wg_params);
+addring(ring_top_1_params);
+addring(ring_top_2_params);
+addring(ring_bottom_1_params);
+addring(ring_bottom_2_params);
+addrect(output_wg_top_params);
+addrect(output_wg_bottom_params);
+
+############ Parámetros fdtd ##########
+
+fdtd_xspan =  2 * arc_delta_x + 2 * fdtd_x_margin;
+fdtd_x = arc_delta_x;
+
+fdtd_yspan = wg_W + 4*arc_delta_y + 2*fdtd_y_margin;
+fdtd_y = 0;
+
+# varfdtd_margin = 0.8;
+
+# test_point_x_right = varfdtd_xspan/2 * varfdtd_margin;
+# test_point_x_left =  -varfdtd_xspan/2 * varfdtd_margin;
+# test_point_y_top = varfdtd_yspan/2 * varfdtd_margin;
+# test_point_y_bot = -varfdtd_yspan/2 * varfdtd_margin;
+
+# test_points_x = [test_point_x_right; test_point_x_right; test_point_x_left; test_point_x_left];
+# test_points_y = [test_point_y_top; test_point_y_bot; test_point_y_top; test_point_y_bot];
+
+fdtd_params = {
+    'background material': clad_material,
+    'x': fdtd_x,
+    'x span': fdtd_xspan,
+    'y': fdtd_y,
+    'y span': fdtd_yspan,
+    'z': wg_H/2,
+    'z span': wg_H + 2*fdtd_z_margin,
+    'mesh accuracy': fdtd_mesh
+    # 'x0': -arc_delta_x,
+    # 'y0': 0
+};
+
+addfdtd(fdtd_params);
+#set("test points",[test_points_x, test_points_y]);
+
+############ Monitores ######################
+
+input_port_params = struct;
+input_port_params.name = "port 1";
+input_port_params.x = -fdtd_x_margin + um;
+input_port_params.y = 0;
+input_port_params.%y span% = 5*wg_W;
+input_port_params.%z span% = wg_H + 2*fdtd_z_margin;
+input_port_params.amplitude = 1;
+addport(input_port_params);
+
+output_port_top_params = struct;
+output_port_top_params.name = "port 2";
+output_port_top_params.x = fdtd_params.x + fdtd_params.%x span% / 2 - um;
+output_port_top_params.y = 2 * arc_delta_y;
+output_port_top_params.%y span% = 5*wg_W;
+output_port_top_params.z = 0;
+output_port_top_params.direction = 1;
+output_port_top_params.amplitude = 1;
+addport(output_port_top_params);
+
+output_port_bottom_params = struct;
+output_port_bottom_params.name = "port 3";
+output_port_bottom_params.x = fdtd_params.x + fdtd_params.%x span% / 2 - um;
+output_port_bottom_params.y = -2 * arc_delta_y;
+output_port_bottom_params.%y span% = 5*wg_W;
+output_port_bottom_params.z = 0;
+output_port_bottom_params.direction = 1;
+output_port_bottom_params.amplitude = 1;
+addport(output_port_bottom_params);
+
+
+field_monitor_params = struct;
+field_monitor_params.name = "field_monitor";
+field_monitor_params.%x min% = getnamed("FDTD","x min");
+field_monitor_params.%x max% = getnamed("FDTD","x max");
+field_monitor_params.%y min% = getnamed("FDTD","y min");
+field_monitor_params.%y max% = getnamed("FDTD","y max");
+field_monitor_params.z = 0;
+field_monitor_params.%override global monitor settings% = true;
+field_monitor_params.%frequency points% = 1;
+field_monitor_params.%use wavelength spacing% = true;
+field_monitor_params.enabled = false;
+addprofile(field_monitor_params);
+
+movie_monitor_params = struct;
+movie_monitor_params.name = "movie_monitor";
+movie_monitor_params.%x min% = getnamed("FDTD","x min");
+movie_monitor_params.%x max% = getnamed("FDTD","x max");
+movie_monitor_params.%y min% = getnamed("FDTD","y min");
+movie_monitor_params.%y max% = getnamed("FDTD","y max");
+movie_monitor_params.z = 0;
+movie_monitor_params.enabled = false;
+addmovie(movie_monitor_params);
+
+####################################################
+
+setglobalmonitor('frequency points',lambda_steps);
+setnamed('FDTD::ports','monitor frequency points',lambda_steps);
+setglobalsource('center wavelength',lambda_0);
+setglobalsource('wavelength span',lambda_span);
+
+save('main_fdtd');
+
+addsweep(3);
+setsweep("s-parameter sweep","excite all ports",false);
+
+index1 = struct; 
+index1.Port = "port 1";
+index1.Mode = "mode 1";
+index1.Active = 1;
+
+index2 = struct; 
+index2.Port = "port 2";
+index2.Mode = "mode 1";
+index2.Active = 1;
+
+index3 = struct; 
+index3.Port = "port 3";
+index3.Mode = "mode 1";
+index3.Active = 0;
+index3.%Map from% = 2;
+index3.%Invert sign% = 0;
+index3.%Map vector% = [1,3,2];
+
+addsweepparameter("s-parameter sweep",index1);
+addsweepparameter("s-parameter sweep",index2);
+addsweepparameter("s-parameter sweep",index3);
+
+runsweep("s-parameter sweep");
+S_matrix = getsweepresult("s-parameter sweep","S matrix");
+S_parameters = getsweepresult("s-parameter sweep","S parameters");
+S_diagnostic = getsweepresult("s-parameter sweep","S diagnostic");
+
+# visualize results
+visualize(S_matrix);
+visualize(S_parameters);
+visualize(S_diagnostic);
+
+# export S-parameter data to file named s_params.dat to be loaded in INTERCONNECT
+exportsweep("s-parameter sweep","soi_y_branch_s_params.dat");

@@ -8,17 +8,17 @@ material_sweep = {
     {
         "material": "Si (Silicon) - Dispersive & Lossless", 
         "wg_H": 220*nm,
-        "wg_W": 0.3*um
+        "wg_W": 0.5*um
     },
     {
         "material": "Si3N4 (Silicon Nitride) - Dispersive & Lossless", 
         "wg_H": 400*nm,
-        "wg_W": 0.75*um
+        "wg_W": 1*um
     }
 };
 
 L_branch = 10*um;
-gs = linspace(0.1*um, 2*um, 10);
+gs = linspace(0.1*um, 2*um, 39);
 R = 2*um;
 theta = 60;
 

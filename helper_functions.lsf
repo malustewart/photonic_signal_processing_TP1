@@ -92,3 +92,26 @@ function s_shape_update(R, theta, x_corner, y_corner, corner, name, wg_material,
     deltas.%delta y% = 2*arc_delta_y;
     return deltas;
 }
+
+function s_shape_dims(R, theta, x_corner, y_corner, corner, name, wg_material, wg_W, wg_H) {
+    arc_chord = R * 2 * sin((theta/2) * pi / 180);
+    arc_delta_y = arc_chord * sin((theta/2) * pi / 180);
+    arc_delta_x = arc_chord * cos((theta/2) * pi / 180);
+    deltas = struct;
+    deltas.%delta x% = 2*arc_delta_x;
+    deltas.%delta y% = 2*arc_delta_y;
+    return deltas;
+}
+
+function plot_profile_xy(profile) {
+    profile_E = profile.E;
+    profile_x = profile.x;
+    profile_y = profile.y;
+    profile_lambda = profile.lambda;
+    profile_lambda_n0 = round(length(profile_lambda)/2);
+
+    profile_E_abs = sqrt(abs(profile_E(:,:,1,profile_lambda_n0,1)^2+profile_E(:,:,1,profile_lambda_n0,2)^2+profile_E(:,:,1,profile_lambda_n0,3)^2));
+    profile_E_abs = pinch(profile_E_abs);
+
+    image(profile_x/1e-6,profile_y/1e-6,profile_E_abs);
+}
